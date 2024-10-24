@@ -23,7 +23,6 @@ const cips = gRPCObject.bag;
 
 let cipList = [];
 let subscribedTopics = new Set();
-const topicHandlers = {};
 
 // Create an HTTP server and a WebSocket server
 const server = http.createServer();
@@ -58,7 +57,6 @@ mqttClient.on('connect', () => {
 
 mqttClient.on('message', (topic, message) => {
     try {
-        console.log(message);
 
         if (topic === 'sendstatus') {
 
@@ -96,30 +94,14 @@ mqttClient.on('message', (topic, message) => {
             }
             broadcastWebSocketMessage("CIP", cipList)
 
-            // wsServer.clients?.forEach(client => {
-            //     if (client.readyState === WebSocket.OPEN) {
-            //         console.log("IN GRPC Sending response to WebSocket-Client of Server status");
-            //         client.send(JSON.stringify({ type: "CIP", cipList }))
-            //     }
-            // });
         }
         else if (topic.includes("equipmentlist")) {
-            console.log(topic);
             const equipmentList = JSON.parse(message.toString());
-            console.log(equipmentList);
             broadcastWebSocketMessage("Equipment", equipmentList)
 
-            // wsServer.clients?.forEach(client => {
-            //     if (client.readyState === WebSocket.OPEN) {
-            //         console.log("IN GRPC Sending response to WebSocket-Client of Equipment-List");
-            //         client.send(JSON.stringify({ type: "Equipment", equipmentList }))
-            //     }
-            // });
         }
         else {
             const bagMessage = JSON.parse(message.toString());
-            console.log(bagMessage);
-
             broadcastWebSocketMessage("Bag", bagMessage)
         }
 
@@ -175,21 +157,6 @@ app.get('/bag', (req, res) => {
         }
 
     });
-})
-
-
-app.post("/cips", (req, res) => {
-    const { id, name, port, ipAddress } = req.body;
-    console.log(id, name, port, ipAddress);
-
-    const clientInfo = {
-        name, id, port, ip: ipAddress, client: new cips.Cips(`${ipAddress}:${port}`, grpc.
-            credentials.createInsecure())
-    }
-
-    cipList.push(clientInfo);
-
-    res.send(cipList)
 })
 
 app.listen(3001, () => {
