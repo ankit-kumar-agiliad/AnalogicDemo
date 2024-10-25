@@ -65,7 +65,6 @@ mqttClient.on('message', (topic, message) => {
             const newTopic = `nodes/${cipClientInfo.id}/equipmentlist`;
 
             if (!subscribedTopics.has(newTopic)) {
-                console.log(`Subscribing to new topic ${newTopic}.`);
                 mqttClient.subscribe(newTopic, (err) => {
                     if (err) {
                         console.log('Subscribed to error: ' + err.message);
@@ -93,12 +92,10 @@ mqttClient.on('message', (topic, message) => {
                 cipList.push(cipClientInfo);
             }
             broadcastWebSocketMessage("CIP", cipList)
-
         }
         else if (topic.includes("equipmentlist")) {
             const equipmentList = JSON.parse(message.toString());
             broadcastWebSocketMessage("Equipment", equipmentList)
-
         }
         else {
             const bagMessage = JSON.parse(message.toString());
@@ -136,26 +133,38 @@ app.get('/bags', (req, response) => {
 });
 
 app.get('/bag', (req, res) => {
-    const { id, bagDetails } = req.body;
+    const { id, name, size, modified } = req.query;
+    const modifyDate = JSON.parse(modified);
     const cip = cipList.find(client => client.id === id.toString());
 
-    console.log(JSON.stringify(cip));
-
-    cip.client.GetBag({ name: bagDetails.name, size: bagDetails.size, modified: bagDetails.modified }, (err, resp) => {
+    cip.client.GetBag({ name: name, size: size, modified: modifyDate }, (err, resp) => {
         if (err) {
             console.error(err);
         } else {
 
-            console.log(resp);
             const topic = `nodes/${cip.id}/${resp.requestId}`;
+
             mqttClient.subscribe(topic, { qos: 2 }, (err, granted) => {
                 if (err) {
                     console.error(err);
                 }
                 console.log(granted);
             });
+            res.send(resp)
         }
 
+    });
+})
+
+app.post('/tipUpload', (req, res) => {
+    const { id, tipJson } = req.body;
+    const topic = `TIP/nodes/${id}`;
+    mqttClient.publish(topic, tipJson, { qos: 1, retain: true }, (err) => {
+        if (err) {
+            console.log(`Error in publishing on topic : ${topic}`, err.message);
+        } else {
+            console.log(`Published the TIP file `);
+        }
     });
 })
 
