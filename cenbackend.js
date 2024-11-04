@@ -144,7 +144,7 @@ app.get('/bag', (req, res) => {
 
             const topic = `nodes/${cip.id}/${resp.requestId}`;
 
-            mqttClient.subscribe(topic, { qos: 2 }, (err, granted) => {
+            mqttClient.subscribe(topic, { qos: 1 }, (err, granted) => {
                 if (err) {
                     console.error(err);
                 }
